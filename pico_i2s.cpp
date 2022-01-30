@@ -124,7 +124,11 @@ void init_i2s(int bps)
     // Channel 0
     {
         dma_config_i2s[0] = dma_channel_get_default_config(dma_channel_i2s[0]);
-        if (bps == 24)
+        if (bps == 32)
+        {
+            channel_config_set_transfer_data_size(&dma_config_i2s[0], DMA_SIZE_32);
+        }
+        else if (bps == 24)
         {
             channel_config_set_transfer_data_size(&dma_config_i2s[0], DMA_SIZE_8);
         }
@@ -141,7 +145,16 @@ void init_i2s(int bps)
         irq_add_shared_handler(DMA_IRQ_0, dma_handler_i2s0, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY);
         irq_set_enabled(DMA_IRQ_0, true);
 
-        if (bps == 24)
+        if (bps == 32)
+        {
+            dma_channel_configure(dma_channel_i2s[0], &dma_config_i2s[0],
+                                  &pio_i2s->txf[sm_i2s], // dst
+                                  &i2s_buff[0][0],       // src
+                                  i2s_buff_size / 2,     // transfer count
+                                  false                  // start immediately
+            );
+        }
+        else if (bps == 24)
         {
             dma_channel_configure(dma_channel_i2s[0], &dma_config_i2s[0],
                                   &pio_i2s->txf[sm_i2s], // dst
@@ -164,7 +177,11 @@ void init_i2s(int bps)
     // Channel 1
     {
         dma_config_i2s[1] = dma_channel_get_default_config(dma_channel_i2s[1]);
-        if (bps == 24)
+        if (bps == 32)
+        {
+            channel_config_set_transfer_data_size(&dma_config_i2s[1], DMA_SIZE_32);
+        }
+        else if (bps == 24)
         {
             channel_config_set_transfer_data_size(&dma_config_i2s[1], DMA_SIZE_8);
         }
@@ -181,7 +198,16 @@ void init_i2s(int bps)
         irq_add_shared_handler(DMA_IRQ_1, dma_handler_i2s1, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY);
         irq_set_enabled(DMA_IRQ_1, true);
 
-        if (bps == 24)
+        if (bps == 32)
+        {
+            dma_channel_configure(dma_channel_i2s[1], &dma_config_i2s[1],
+                                  &pio_i2s->txf[sm_i2s], // dst
+                                  &i2s_buff[1][0],       // src
+                                  i2s_buff_size / 2,     // transfer count
+                                  false                  // start immediately
+            );
+        }
+        else if (bps == 24)
         {
             dma_channel_configure(dma_channel_i2s[1], &dma_config_i2s[1],
                                   &pio_i2s->txf[sm_i2s], // dst
