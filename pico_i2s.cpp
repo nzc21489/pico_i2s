@@ -85,8 +85,8 @@ void init_i2s(int bps)
     if (!i2s_buff)
     {
         i2s_buff = new int16_t *[2];
-        i2s_buff[0] = new int16_t[i2s_buff_size];
-        i2s_buff[1] = new int16_t[i2s_buff_size];
+        i2s_buff[0] = new int16_t[i2s_buff_size + 4];
+        i2s_buff[1] = new int16_t[i2s_buff_size + 4];
 
         memset(&i2s_buff[0][0], 0, i2s_buff_size * 2);
         memset(&i2s_buff[1][0], 0, i2s_buff_size * 2);
