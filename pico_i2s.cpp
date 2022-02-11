@@ -55,7 +55,7 @@ void __isr __time_critical_func(dma_handler_i2s0)()
 
         if (int_count_i2s >= i2s_buff_count)
         {
-            memset(&i2s_buff[1][0], 0, i2s_buff_size * 2);
+            memset(&i2s_buff[1][0], 0, (i2s_buff_size + 4) * 2);
         }
 
         dma_channel_set_read_addr(dma_channel_i2s[0], &i2s_buff[0][0], false);
@@ -71,7 +71,7 @@ void __isr __time_critical_func(dma_handler_i2s1)()
 
         if (int_count_i2s >= i2s_buff_count)
         {
-            memset(&i2s_buff[0][0], 0, i2s_buff_size * 2);
+            memset(&i2s_buff[0][0], 0, (i2s_buff_size + 4) * 2);
         }
 
         dma_channel_set_read_addr(dma_channel_i2s[1], &i2s_buff[1][0], false);
@@ -88,8 +88,8 @@ void init_i2s(int bps)
         i2s_buff[0] = new int16_t[i2s_buff_size + 4];
         i2s_buff[1] = new int16_t[i2s_buff_size + 4];
 
-        memset(&i2s_buff[0][0], 0, i2s_buff_size * 2);
-        memset(&i2s_buff[1][0], 0, i2s_buff_size * 2);
+        memset(&i2s_buff[0][0], 0, (i2s_buff_size + 4) * 2);
+        memset(&i2s_buff[1][0], 0, (i2s_buff_size + 4) * 2);
     }
 
     pio_gpio_init(pio_i2s, PICO_AUDIO_I2S_CLOCK_PIN_BASE);
