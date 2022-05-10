@@ -32,18 +32,20 @@
 #include "hardware/resets.h"
 #include "hardware/pio.h"
 #include <cstring>
+#include <new>
 
 PIO pio_i2s = pio0;
 uint sm_i2s;
-volatile uint8_t i2s_buff_num = 0;
 uint8_t dma_channel_i2s[2];
 dma_channel_config dma_config_i2s[2];
 uint offset_i2s;
 volatile int int_count_i2s = 0;
 uint32_t i2s_buff_size = (4096 * 4);
+int i2s_buff_num = 2;
 int16_t **i2s_buff = NULL;
 const pio_program_t *i2s_pio_program;
 volatile int i2s_buff_count = 1;
+volatile int i2s_buff_num_count = 1;
 
 int audio_bit = 16;
 
@@ -52,13 +54,16 @@ void __isr __time_critical_func(dma_handler_i2s0)()
     if (dma_irqn_get_channel_status(0, dma_channel_i2s[0]))
     {
         dma_irqn_acknowledge_channel(0, dma_channel_i2s[0]);
+        
+        i2s_buff_num_count++;
+        i2s_buff_num_count %= i2s_buff_num;
 
         if (int_count_i2s >= i2s_buff_count)
         {
-            memset(&i2s_buff[1][0], 0, (i2s_buff_size + 4) * 2);
+            memset(&i2s_buff[(i2s_buff_num_count + 1) % i2s_buff_num][0], 0, (i2s_buff_size + 4) * 2);
         }
 
-        dma_channel_set_read_addr(dma_channel_i2s[0], &i2s_buff[0][0], false);
+        dma_channel_set_read_addr(dma_channel_i2s[0], &i2s_buff[i2s_buff_num_count][0], false);
         int_count_i2s++;
     }
 }
@@ -69,27 +74,42 @@ void __isr __time_critical_func(dma_handler_i2s1)()
     {
         dma_irqn_acknowledge_channel(1, dma_channel_i2s[1]);
 
+        i2s_buff_num_count++;
+        i2s_buff_num_count %= i2s_buff_num;
+
         if (int_count_i2s >= i2s_buff_count)
         {
-            memset(&i2s_buff[0][0], 0, (i2s_buff_size + 4) * 2);
+            memset(&i2s_buff[(i2s_buff_num_count + 1) % i2s_buff_num][0], 0, (i2s_buff_size + 4) * 2);
         }
 
-        dma_channel_set_read_addr(dma_channel_i2s[1], &i2s_buff[1][0], false);
+        dma_channel_set_read_addr(dma_channel_i2s[1], &i2s_buff[i2s_buff_num_count][0], false);
         int_count_i2s++;
     }
 }
 
-void init_i2s(int bps)
+int init_i2s(int bps)
 {
+    i2s_buff_num_count = i2s_buff_num - 1;
     audio_bit = bps;
     if (!i2s_buff)
     {
-        i2s_buff = new int16_t *[2];
-        i2s_buff[0] = new int16_t[i2s_buff_size + 4];
-        i2s_buff[1] = new int16_t[i2s_buff_size + 4];
-
-        memset(&i2s_buff[0][0], 0, (i2s_buff_size + 4) * 2);
-        memset(&i2s_buff[1][0], 0, (i2s_buff_size + 4) * 2);
+        if (i2s_buff_num < 2)
+        {
+            i2s_buff_num = 2;
+        }
+        i2s_buff = new (std::nothrow) int16_t *[i2s_buff_num];
+        if (i2s_buff == NULL)
+        {
+            return -1;
+        }
+        for (int i = 0; i < i2s_buff_num; i++){
+            i2s_buff[i] = new (std::nothrow) int16_t[i2s_buff_size + 4];
+            if (i2s_buff == NULL)
+            {
+                return -1;
+            }
+            memset(&i2s_buff[i][0], 0, (i2s_buff_size + 4) * 2);
+        }
     }
 
     pio_gpio_init(pio_i2s, PICO_AUDIO_I2S_CLOCK_PIN_BASE);
@@ -226,6 +246,7 @@ void init_i2s(int bps)
             );
         }
     }
+    return 0;
 }
 
 void deinit_i2s()
@@ -262,8 +283,11 @@ void deinit_i2s()
     i2s_buff_count = 1;
     if (i2s_buff)
     {
-        delete[] i2s_buff[0];
-        delete[] i2s_buff[1];
+        for (int i = 0; i < i2s_buff_num; i++)
+        {
+            delete[] i2s_buff[i];
+        }
+
         delete[] i2s_buff;
     }
     i2s_buff = NULL;

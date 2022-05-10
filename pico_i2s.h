@@ -30,11 +30,12 @@
 #include "pico/stdlib.h"
 
 extern uint32_t i2s_buff_size;
+extern int i2s_buff_num;
 extern int16_t **i2s_buff;
 extern volatile int int_count_i2s;
 extern volatile int i2s_buff_count;
 
-void init_i2s(int bps);
+int init_i2s(int bps);
 void deinit_i2s();
 void i2s_start();
 
